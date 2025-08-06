@@ -41,8 +41,8 @@ COMMON_PACKAGES=(
     gnupg
     curl
     openssl
-    base64
     diffutils
+    unzip
 )
 
 # Install common packages
