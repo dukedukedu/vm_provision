@@ -60,13 +60,36 @@ done
 echo "Detecting cloud platform..." | tee -a "$LOG_FILE"
 CLOUD_PROVIDER="unknown"
 
-if curl -s -H Metadata:true --connect-timeout 2 http://169.254.169.254/metadata/instance?api-version=2021-02-01 \
+CLOUD_PROVIDER="unknown"
+
+# Try Azure first
+if curl -s -H Metadata:true --connect-timeout 2 \
+    "http://169.254.169.254/metadata/instance?api-version=2021-02-01" \
     | grep -iq "azure"; then
     CLOUD_PROVIDER="azure"
-elif curl -s --connect-timeout 2 http://169.254.169.254/latest/dynamic/instance-identity/document \
-    | grep -iq "amazon"; then
-    CLOUD_PROVIDER="aws"
+
+# Then try AWS (IMDSv2 with fallback to IMDSv1)
+else
+    TOKEN=$(curl -s --connect-timeout 2 -X PUT "http://169.254.169.254/latest/api/token" \
+      -H "X-aws-ec2-metadata-token-ttl-seconds: 60")
+
+    if [[ -n "$TOKEN" ]]; then
+        METADATA=$(curl -s --connect-timeout 2 -H "X-aws-ec2-metadata-token: $TOKEN" \
+          http://169.254.169.254/latest/dynamic/instance-identity/document)
+
+        if echo "$METADATA" | grep -q '"instanceId"' && echo "$METADATA" | grep -q '"region"'; then
+            CLOUD_PROVIDER="aws"
+        fi
+    else
+        # Try IMDSv1 as fallback
+        METADATA=$(curl -s --connect-timeout 2 http://169.254.169.254/latest/dynamic/instance-identity/document)
+
+        if echo "$METADATA" | grep -q '"instanceId"' && echo "$METADATA" | grep -q '"region"'; then
+            CLOUD_PROVIDER="aws"
+        fi
+    fi
 fi
+
 
 echo "Detected platform: $CLOUD_PROVIDER" | tee -a "$LOG_FILE"
 
