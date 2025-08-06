@@ -106,6 +106,13 @@ install_azcli() {
 # Install AWS CLI
 install_awscli() {
     echo "Installing AWS CLI..." | tee -a "$LOG_FILE"
+
+    if command -v aws >/dev/null 2>&1; then
+        echo "AWS CLI is already installed. Skipping." | tee -a "$LOG_FILE"
+        return
+    fi
+
+
     TMP_DIR=$(mktemp -d)
     cd "$TMP_DIR"
     if curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
