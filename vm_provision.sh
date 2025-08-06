@@ -40,7 +40,6 @@ COMMON_PACKAGES=(
     git
     jq
     gnupg
-    curl
     openssl
     diffutils
     unzip
