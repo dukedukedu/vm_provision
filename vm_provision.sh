@@ -108,7 +108,8 @@ echo "Detected platform: $PLATFORM" | tee -a "$LOG_FILE"
 install_azcli() {
     echo "Installing Azure CLI..." | tee -a "$LOG_FILE"
     if ! curl -sL https://aka.ms/InstallAzureCLIDeb | bash >> "$LOG_FILE" 2>>"$ERROR_LOG"; then
-YELLOW    fi
+        log_error "Failed to install Azure CLI."
+    fi
 }
 
 # Install AWS CLI
