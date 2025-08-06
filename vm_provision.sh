@@ -145,6 +145,7 @@ RESET="\033[0m"
 
 if $MSMTP_INSTALLED && [[ ! -f /etc/msmtprc ]]; then
     echo -e "${YELLOW}NOTE: Don't forget to manually configure /etc/msmtprc${RESET}"
+    echo "NOTE: Don't forget to manually configure /etc/msmtprc" >> "$LOG_FILE"
 fi
 
 echo "Provisioning completed. Check '$LOG_FILE' for details and '$ERROR_LOG' for any issues." | tee -a "$LOG_FILE"
