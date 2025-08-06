@@ -14,12 +14,7 @@ log_error() {
     echo "ERROR: $1" | tee -a "$ERROR_LOG"
 }
 
-# Update and upgrade system
-echo "Updating and upgrading packages..." | tee -a "$LOG_FILE"
-if ! apt update -y && apt upgrade -y >> "$LOG_FILE" 2>>"$ERROR_LOG"; then
-    log_error "Failed to update and upgrade system packages."
-    exit 1
-fi
+echo "Skipping package updates and upgrades — manage manually." | tee -a "$LOG_FILE"
 
 # Common packages to install
 COMMON_PACKAGES=(
