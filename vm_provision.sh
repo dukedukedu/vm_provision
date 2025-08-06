@@ -7,6 +7,9 @@ ERROR_LOG="vm_provisioning_errors.log"
 > "$LOG_FILE"
 > "$ERROR_LOG"
 
+# Force non-interactive installs
+export DEBIAN_FRONTEND=noninteractive
+
 echo "Starting VM provisioning on Debian/Ubuntu..." | tee -a "$LOG_FILE"
 
 # Function to log and display errors
@@ -14,7 +17,17 @@ log_error() {
     echo "ERROR: $1" | tee -a "$ERROR_LOG"
 }
 
-echo "Skipping package updates and upgrades — manage manually." | tee -a "$LOG_FILE"
+# Function to log debconf config used by each package
+log_package_config() {
+    local pkg=$1
+    echo "== Debconf selections for $pkg ==" >> "$LOG_FILE"
+    if debconf-get-selections | grep "^$pkg" >> "$LOG_FILE"; then
+        echo "✓ Debconf selections found for $pkg" >> "$LOG_FILE"
+    else
+        echo "No debconf selections found for $pkg (likely no prompts or defaults used)." >> "$LOG_FILE"
+    fi
+    echo "" >> "$LOG_FILE"
+}
 
 # Common packages to install
 COMMON_PACKAGES=(
@@ -36,7 +49,9 @@ COMMON_PACKAGES=(
 echo "Installing common packages..." | tee -a "$LOG_FILE"
 for pkg in "${COMMON_PACKAGES[@]}"; do
     echo "Installing $pkg..." | tee -a "$LOG_FILE"
-    if ! apt install -y "$pkg" >> "$LOG_FILE" 2>>"$ERROR_LOG"; then
+    if apt install -y "$pkg" >> "$LOG_FILE" 2>>"$ERROR_LOG"; then
+        log_package_config "$pkg"
+    else
         log_error "Failed to install $pkg."
     fi
 done
@@ -88,4 +103,4 @@ else
     log_error "Could not detect cloud platform. Skipping cloud CLI installation."
 fi
 
-echo "Provisioning completed. Check '$ERROR_LOG' for any errors." | tee -a "$LOG_FILE"
+echo "Provisioning completed. Check '$LOG_FILE' for details and '$ERROR_LOG' for any issues." | tee -a "$LOG_FILE"
