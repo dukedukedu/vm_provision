@@ -52,6 +52,11 @@ for pkg in "${COMMON_PACKAGES[@]}"; do
     echo "Installing $pkg..." | tee -a "$LOG_FILE"
     if apt install -y "$pkg" >> "$LOG_FILE" 2>>"$ERROR_LOG"; then
         log_package_config "$pkg"
+
+        # Track msmtp install status
+        if [[ "$pkg" == "msmtp" ]]; then
+            MSMTP_INSTALLED=true
+        fi
     else
         log_error "Failed to install $pkg."
     fi
@@ -132,6 +137,14 @@ elif [[ "$CLOUD_PROVIDER" == "aws" ]]; then
     install_awscli
 else
     log_error "Could not detect cloud platform. Skipping cloud CLI installation."
+fi
+
+# Colors
+YELLOW="\033[1;33m"
+RESET="\033[0m"
+
+if $MSMTP_INSTALLED && [[ ! -f /etc/msmtprc ]]; then
+    echo -e "${YELLOW}NOTE: Don't forget to manually configure /etc/msmtprc${RESET}"
 fi
 
 echo "Provisioning completed. Check '$LOG_FILE' for details and '$ERROR_LOG' for any issues." | tee -a "$LOG_FILE"
