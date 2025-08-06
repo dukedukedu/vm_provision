@@ -96,10 +96,11 @@ detect_platform() {
 
   # Unknown
   echo "unknown"
+  return
 }
 
-PLATFORM=$(detect_platform)
-
+# PLATFORM=$(detect_platform)
+PLATFORM=$(detect_platform 2>/dev/null | head -n1 | tr -d '\r')
 
 echo "Detected platform: $PLATFORM" | tee -a "$LOG_FILE"
 
@@ -107,8 +108,7 @@ echo "Detected platform: $PLATFORM" | tee -a "$LOG_FILE"
 install_azcli() {
     echo "Installing Azure CLI..." | tee -a "$LOG_FILE"
     if ! curl -sL https://aka.ms/InstallAzureCLIDeb | bash >> "$LOG_FILE" 2>>"$ERROR_LOG"; then
-        log_error "Failed to install Azure CLI."
-    fi
+YELLOW    fi
 }
 
 # Install AWS CLI
