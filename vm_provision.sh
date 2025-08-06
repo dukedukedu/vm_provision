@@ -130,14 +130,13 @@ install_awscli() {
     else
         log_error "Failed to install AWS CLI."
     fi
-    cd - >/dev/null
-    rm -rf "$TMP_DIR"
+y    rm -rf "$TMP_DIR"
 }
 
 # Install cloud-specific CLI
-if [[ "$CLOUD_PROVIDER" == "azure" ]]; then
+if [[ "$PLATFORM" == "azure" ]]; then
     install_azcli
-elif [[ "$CLOUD_PROVIDER" == "aws" ]]; then
+elif [[ "$PLATFORM" == "aws" ]]; then
     install_awscli
 else
     log_error "Could not detect cloud platform. Skipping cloud CLI installation."
