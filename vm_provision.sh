@@ -45,6 +45,8 @@ COMMON_PACKAGES=(
     unzip
 )
 
+MSMTP_INSTALLED=false
+
 # Install common packages
 echo "Installing common packages..." | tee -a "$LOG_FILE"
 apt update
@@ -53,7 +55,6 @@ for pkg in "${COMMON_PACKAGES[@]}"; do
     if apt install -y "$pkg" >> "$LOG_FILE" 2>>"$ERROR_LOG"; then
         log_package_config "$pkg"
 
-        # Track msmtp install status
         if [[ "$pkg" == "msmtp" ]]; then
             MSMTP_INSTALLED=true
         fi
@@ -66,42 +67,40 @@ done
 echo "Detecting cloud platform..." | tee -a "$LOG_FILE"
 
 detect_platform() {
-  # Try AWS IMDSv2
-  if TOKEN=$(curl -s --fail --connect-timeout 1 -X PUT \
-      "http://169.254.169.254/latest/api/token" \
-      -H "X-aws-ec2-metadata-token-ttl-seconds: 60"); then
+    # Try AWS IMDSv2
+    if TOKEN=$(curl -s --fail --connect-timeout 1 -X PUT \
+        "http://169.254.169.254/latest/api/token" \
+        -H "X-aws-ec2-metadata-token-ttl-seconds: 60"); then
 
-    if curl -s --fail --connect-timeout 1 \
-        -H "X-aws-ec2-metadata-token: $TOKEN" \
-        http://169.254.169.254/latest/meta-data/ >/dev/null; then
-      echo "aws"
-      return
+        if curl -s --fail --connect-timeout 1 \
+            -H "X-aws-ec2-metadata-token: $TOKEN" \
+            http://169.254.169.254/latest/meta-data/ >/dev/null; then
+            echo "aws"
+            return
+        fi
     fi
-  fi
 
-  # Fallback to AWS IMDSv1
-  if curl -s --fail --connect-timeout 1 \
-       http://169.254.169.254/latest/meta-data/ >/dev/null; then
-    echo "aws"
+    # Fallback to AWS IMDSv1
+    if curl -s --fail --connect-timeout 1 \
+         http://169.254.169.254/latest/meta-data/ >/dev/null; then
+        echo "aws"
+        return
+    fi
+
+    # Try Azure
+    if curl -s --fail -H "Metadata:true" --connect-timeout 1 \
+         "http://169.254.169.254/metadata/instance?api-version=2021-02-01" \
+         -o /dev/null; then
+        echo "azure"
+        return
+    fi
+
+    echo "unknown"
     return
-  fi
-
-  # Try Azure
-  if curl -s --fail -H "Metadata:true" --connect-timeout 1 \
-       "http://169.254.169.254/metadata/instance?api-version=2021-02-01" \
-       -o /dev/null; then
-    echo "azure"
-    return
-  fi
-
-  # Unknown
-  echo "unknown"
-  return
 }
 
-# PLATFORM=$(detect_platform)
-PLATFORM=$(detect_platform 2>/dev/null | head -n1 | tr -d '\r')
-
+# Capture and sanitize platform detection
+PLATFORM=$(detect_platform 2>/dev/null | head -n1 | tr -d '\r\n')
 echo "Detected platform: $PLATFORM" | tee -a "$LOG_FILE"
 
 # Install Azure CLI
@@ -121,7 +120,6 @@ install_awscli() {
         return
     fi
 
-
     TMP_DIR=$(mktemp -d)
     cd "$TMP_DIR"
     if curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
@@ -131,7 +129,7 @@ install_awscli() {
     else
         log_error "Failed to install AWS CLI."
     fi
-y    rm -rf "$TMP_DIR"
+    rm -rf "$TMP_DIR"
 }
 
 # Install cloud-specific CLI
@@ -147,7 +145,7 @@ fi
 YELLOW="\033[1;33m"
 RESET="\033[0m"
 
-if $MSMTP_INSTALLED && [[ ! -f /etc/msmtprc ]]; then
+if [[ "$MSMTP_INSTALLED" == "true" && ! -f /etc/msmtprc ]]; then
     echo -e "${YELLOW}NOTE: Don't forget to manually configure /etc/msmtprc${RESET}"
     echo "NOTE: Don't forget to manually configure /etc/msmtprc" >> "$LOG_FILE"
 fi
