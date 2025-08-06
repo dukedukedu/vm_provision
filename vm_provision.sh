@@ -101,7 +101,7 @@ detect_platform() {
 PLATFORM=$(detect_platform)
 
 
-echo "Detected platform: $CLOUD_PROVIDER" | tee -a "$LOG_FILE"
+echo "Detected platform: $PLATFORM" | tee -a "$LOG_FILE"
 
 # Install Azure CLI
 install_azcli() {
