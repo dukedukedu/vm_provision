@@ -31,6 +31,7 @@ log_package_config() {
 
 # Common packages to install
 COMMON_PACKAGES=(
+    debconf-utils
     logrotate
     cron
     msmtp
@@ -47,6 +48,7 @@ COMMON_PACKAGES=(
 
 # Install common packages
 echo "Installing common packages..." | tee -a "$LOG_FILE"
+apt update
 for pkg in "${COMMON_PACKAGES[@]}"; do
     echo "Installing $pkg..." | tee -a "$LOG_FILE"
     if apt install -y "$pkg" >> "$LOG_FILE" 2>>"$ERROR_LOG"; then
